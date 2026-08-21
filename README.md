@@ -12,6 +12,28 @@ This repository is a Terraform Mongodb for [Terraform](https://www.terraform.io)
 - [Terraform](https://www.terraform.io/downloads.html) >= 0.13
 - [Go](https://golang.org/doc/install) >= 1.25
 
+### Publishing (`registry.terraform.io/krogon/mongodb`)
+
+This fork publishes as **`krogon/mongodb`**, not `FelGel/mongodb`. Repo name must stay `terraform-provider-mongodb`. Tags must match `v*` (first cut of this namespace: `v3.2.0`).
+
+**Terraform Registry (once per provider)**
+
+1. GitHub user/org `krogon` must own the `krogon` namespace on [registry.terraform.io](https://registry.terraform.io).
+2. Register the **public** half of the signing GPG key on that namespace ([Publishing providers](https://developer.hashicorp.com/terraform/registry/providers/publishing)). One GPG key per namespace — use the same key as other `krogon` providers (e.g. `terraform-provider-postgresql`). Signing with a different key than HashiCorp has on file makes the Registry reject the version.
+3. Create provider `mongodb` linked to repo `krogon/terraform-provider-mongodb`. Registry installs a GitHub webhook; it ingests a `v*` GitHub Release that includes a signed checksum and `terraform-registry-manifest.json`.
+
+**GitHub Actions secrets** (Settings → Secrets and variables → Actions on **this** repo, not in code). Copy `GPG_PRIVATE_KEY` / `PASSPHRASE` from `terraform-provider-postgresql` if that namespace already publishes.
+
+| Secret | Used by | What to put |
+| --- | --- | --- |
+| `GPG_PRIVATE_KEY` | `crazy-max/ghaction-import-gpg@v7` | ASCII-armored **private** key (`gpg --armor --export-secret-keys <KEY_ID>`). Must be the same key whose **public** half is registered on Terraform Registry. |
+| `PASSPHRASE` | same action | Passphrase for that private key. Empty-string secret if the key has no passphrase (prefer a passphrase). |
+| `GITHUB_TOKEN` | goreleaser (create GitHub Release + upload assets) | Do **not** create this. Default Actions token. This workflow sets `permissions: contents: write` so the token can publish the release. |
+
+`GPG_FINGERPRINT` is **not** a secret. The import-gpg step outputs it; goreleaser uses it to `--detach-sign` `SHA256SUMS`.
+
+**Sanity check before the first tag:** Actions secrets present, Registry provider + GPG key saved, `providerAddr` in `main.go` is `registry.terraform.io/krogon/mongodb`. Then `git tag v3.2.0 && git push --tags`. A missing secret fails at import-gpg; a GPG/Registry mismatch publishes a GitHub Release that Registry silently (or with an email) refuses.
+
 ### Installation
 
 1. Clone the repository
