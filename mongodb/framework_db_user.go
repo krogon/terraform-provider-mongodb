@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -116,6 +117,9 @@ func (r *dbUserResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 		},
 		Blocks: map[string]schema.Block{
 			"role": schema.SetNestedBlock{
+				Validators: []validator.Set{
+					setvalidator.SizeAtMost(1000),
+				},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"db":   schema.StringAttribute{Optional: true},

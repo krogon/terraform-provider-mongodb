@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6/tf6server"
 )
 
-const providerAddr = "registry.terraform.io/FelGel/mongodb"
+const providerAddr = "registry.terraform.io/krogon/mongodb"
 
 // The provider is mid-migration from terraform-plugin-sdk/v2 to
 // terraform-plugin-framework. Both halves are served together through a
