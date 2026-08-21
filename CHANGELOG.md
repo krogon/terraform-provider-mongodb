@@ -1,5 +1,12 @@
 # Changelog
 
+## 33.1.0
+
+NOTES:
+
+* Provider address is now `registry.terraform.io/krogon/mongodb`.
+* `mongodb_db_user`: `role` MaxItems raised from 25 to 1000 (Amazon DocumentDB's per-user role cap), so Terraform can read a production user before shrinking it to cluster-wide `*AnyDatabase` roles.
+
 ## 3.1.0
 
 FEATURES:
