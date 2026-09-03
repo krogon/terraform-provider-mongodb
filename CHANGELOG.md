@@ -1,5 +1,11 @@
 # Changelog
 
+## 33.1.1
+
+BUG FIXES:
+
+* `mongodb_db_user`: on `updateUser`, omit `authenticationRestrictions` when neither plan nor prior state has restriction blocks (DocumentDB rejects the argument). Removing the HCL block still sends `[]` so Community MongoDB clears them.
+
 ## 33.1.0
 
 NOTES:

@@ -99,7 +99,7 @@ Maps to MongoDB's user [`authenticationRestrictions`](https://www.mongodb.com/do
 * `client_source` (Optional, list of string) – IP addresses or CIDR ranges from which the user is allowed to connect.
 * `server_address` (Optional, list of string) – IP addresses or CIDR ranges of the MongoDB instance addresses the user is allowed to connect to.
 
-> **NOTE:** The configured value is preserved in state as written; the provider does not read the restrictions back from the server.
+> **NOTE:** The configured value is preserved in state as written; the provider does not read the restrictions back from the server. Removing every `authentication_restriction` block still clears them on Community MongoDB (`updateUser` with `[]`). The field is omitted when restrictions were never in state, because Amazon DocumentDB rejects `authenticationRestrictions` on `updateUser`.
 
 ### Role Block
 
