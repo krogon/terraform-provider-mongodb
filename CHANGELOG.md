@@ -1,5 +1,11 @@
 # Changelog
 
+## 33.1.1
+
+BUG FIXES:
+
+* `mongodb_db_user`: omit `authenticationRestrictions` on `updateUser` unless the HCL block is set. DocumentDB rejects that argument; sending an empty array broke applies that only changed roles.
+
 ## 33.1.0
 
 NOTES:

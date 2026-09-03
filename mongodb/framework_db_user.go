@@ -337,23 +337,24 @@ func (r *dbUserResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if rolesValue == nil {
 		rolesValue = []Role{}
 	}
-	// Always send authenticationRestrictions on update (empty clears them).
-	if authRestrictions == nil {
-		authRestrictions = bson.A{}
-	}
 
 	adminDB := client.Database(database)
 	var cmd bson.D
 	if authMechanism == "MONGODB-AWS" {
 		// IAM users: update roles only; password is ignored.
-		cmd = bson.D{{Key: "updateUser", Value: userName}, {Key: "roles", Value: rolesValue}, {Key: "authenticationRestrictions", Value: authRestrictions}}
+		cmd = bson.D{{Key: "updateUser", Value: userName}, {Key: "roles", Value: rolesValue}}
 	} else {
 		pw, pwDiags := effectivePassword(ctx, req.Config, plan)
 		resp.Diagnostics.Append(pwDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		cmd = bson.D{{Key: "updateUser", Value: userName}, {Key: "pwd", Value: pw}, {Key: "roles", Value: rolesValue}, {Key: "authenticationRestrictions", Value: authRestrictions}}
+		cmd = bson.D{{Key: "updateUser", Value: userName}, {Key: "pwd", Value: pw}, {Key: "roles", Value: rolesValue}}
+	}
+	// DocumentDB rejects authenticationRestrictions on updateUser. Only send
+	// the field when the HCL block is set (same as createUser).
+	if len(authRestrictions) > 0 {
+		cmd = append(cmd, bson.E{Key: "authenticationRestrictions", Value: authRestrictions})
 	}
 	if result := adminDB.RunCommand(ctx, cmd); result.Err() != nil {
 		resp.Diagnostics.AddError("Could not update the user", result.Err().Error())
