@@ -311,8 +311,9 @@ func (r *dbUserResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 func (r *dbUserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan dbUserResourceModel
+	var plan, prior dbUserResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -330,6 +331,8 @@ func (r *dbUserResource) Update(ctx context.Context, req resource.UpdateRequest,
 	resp.Diagnostics.Append(diags...)
 	authRestrictions, arDiags := authRestrictionsFromSet(ctx, plan.AuthRestrictions)
 	resp.Diagnostics.Append(arDiags...)
+	priorRestrictions, priorDiags := authRestrictionsFromSet(ctx, prior.AuthRestrictions)
+	resp.Diagnostics.Append(priorDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -351,11 +354,7 @@ func (r *dbUserResource) Update(ctx context.Context, req resource.UpdateRequest,
 		}
 		cmd = bson.D{{Key: "updateUser", Value: userName}, {Key: "pwd", Value: pw}, {Key: "roles", Value: rolesValue}}
 	}
-	// DocumentDB rejects authenticationRestrictions on updateUser. Only send
-	// the field when the HCL block is set (same as createUser).
-	if len(authRestrictions) > 0 {
-		cmd = append(cmd, bson.E{Key: "authenticationRestrictions", Value: authRestrictions})
-	}
+	cmd = appendAuthRestrictionsOnUpdate(cmd, authRestrictions, priorRestrictions)
 	if result := adminDB.RunCommand(ctx, cmd); result.Err() != nil {
 		resp.Diagnostics.AddError("Could not update the user", result.Err().Error())
 		return
@@ -453,6 +452,21 @@ func (r *dbUserResource) readUserInto(client *mongo.Client, id string, m *dbUser
 		m.AuthMechanism = types.StringNull()
 	}
 	return nil
+}
+
+// appendAuthRestrictionsOnUpdate adds authenticationRestrictions to updateUser
+// only when IaC requires a change. DocumentDB rejects the argument, so it is
+// omitted when neither plan nor prior state has restriction blocks. Removing
+// the HCL block still sends [] so Community MongoDB converges to empty.
+func appendAuthRestrictionsOnUpdate(cmd bson.D, planRestrictions, priorRestrictions bson.A) bson.D {
+	switch {
+	case len(planRestrictions) > 0:
+		return append(cmd, bson.E{Key: "authenticationRestrictions", Value: planRestrictions})
+	case len(priorRestrictions) > 0:
+		return append(cmd, bson.E{Key: "authenticationRestrictions", Value: bson.A{}})
+	default:
+		return cmd
+	}
 }
 
 func rolesFromSet(ctx context.Context, set types.Set) ([]Role, diag.Diagnostics) {

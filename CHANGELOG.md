@@ -4,7 +4,7 @@
 
 BUG FIXES:
 
-* `mongodb_db_user`: omit `authenticationRestrictions` on `updateUser` unless the HCL block is set. DocumentDB rejects that argument; sending an empty array broke applies that only changed roles.
+* `mongodb_db_user`: on `updateUser`, omit `authenticationRestrictions` when neither plan nor prior state has restriction blocks (DocumentDB rejects the argument). Removing the HCL block still sends `[]` so Community MongoDB clears them.
 
 ## 33.1.0
 
